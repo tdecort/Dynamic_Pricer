@@ -27,6 +27,6 @@ A real-time quantitative finance web application built with Dash and Plotly. Thi
 ## 🚀 Installation & Setup
 
 1. **Install the latest version of Python and the packages**
-  python -m pip install dash dash-bootstrap-components plotly pandas numpy scipy yfinance
+   python -m pip install dash dash-bootstrap-components plotly pandas numpy scipy yfinance
 2. **run using :"python app.py"**
   
