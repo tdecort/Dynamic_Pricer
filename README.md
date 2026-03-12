@@ -38,11 +38,11 @@ The Airbag Note provides no absolute principal protection but offers a structura
   * **Unprotected Downside ($S_T < A$)**: If the final stock price breaches the airbag level, the protection is knocked out, and the investor takes a proportional loss: $\frac{N}{A} \cdot S_T$
 
 ## 📸 Screenshots
-<img width="2522" height="820" alt="image" src="https://github.com/user-attachments/assets/b2181ef6-823a-4563-8b55-3e583350d15a" />
+<img width="2559" height="838" alt="image" src="https://github.com/user-attachments/assets/5b2a7e9d-8bcd-4464-a861-e457d6d48c3e" />
 
-<img width="2505" height="1023" alt="image" src="https://github.com/user-attachments/assets/4ae82cc1-ae70-4a9f-a9ea-740fbb757f7c" />
+<img width="2557" height="1179" alt="image" src="https://github.com/user-attachments/assets/627a8a62-1e6b-4076-82bf-b5f419ae0f70" />
 
-<img width="2507" height="1032" alt="image" src="https://github.com/user-attachments/assets/fb8d0b89-6d33-4b0b-ba56-a5bc97519245" />
+<img width="2559" height="1178" alt="image" src="https://github.com/user-attachments/assets/e7e9e47a-56da-4fa5-94f3-62b977e1aec2" />
 
 
 ## 🚀 Installation & Setup
