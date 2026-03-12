@@ -18,24 +18,24 @@ A real-time quantitative finance web application built with Dash and Plotly. Thi
 
 ## 📈 Structured Products Supported
 
-[cite_start]This application prices and structures two specific types of exotic financial derivatives, both dependent on the performance of a single underlying stock[cite: 5]. [cite_start]Both products only generate a payoff at their maturity date[cite: 12, 23].
+This application prices and structures two specific types of exotic financial derivatives, both dependent on the performance of a single underlying stock. Both products only generate a payoff at their maturity date.
 
 ### 1. Partially Principal Protected Note (PPPN)
-[cite_start]The PPPN is designed for investors seeking a partial capital guarantee along with potential participation in significant market movements[cite: 11, 13].
-* [cite_start]**Capital Guarantee**: For an initial investment $N$ at time $t=0$, the investor is guaranteed to receive a fixed amount equal to 90% of $N$ at maturity[cite: 10, 13].
-* [cite_start]**Premium Mechanism**: On top of the 90% guarantee, the investor receives a premium based on the final stock price $S_T$ relative to two specific strike prices, $K_1$ and $K_2$ (where $K_1 \le S_0 \le K_2$)[cite: 14, 16].
-* [cite_start]**Payoff Profile**: The premium is mathematically defined as[cite: 15]:
-  * [cite_start]If the stock drops significantly ($S_T < K_1$): `Premium` = $\frac{N}{S_0}(K_1 - S_T)$[cite: 15].
-  * [cite_start]If the stock stagnates ($K_1 \le S_T \le K_2$): `Premium` = 0[cite: 15].
-  * [cite_start]If the stock rallies ($S_T > K_2$): `Premium` = $\frac{N}{S_0}(S_T - K_2)$[cite: 15].
+The PPPN is designed for investors seeking a partial capital guarantee along with potential participation in significant market movements.
+* **Capital Guarantee**: For an initial investment $N$ at time $t=0$, the investor is guaranteed to receive a fixed amount equal to 90% of $N$ at maturity.
+* **Premium Mechanism**: On top of the 90% guarantee, the investor receives a premium based on the final stock price $S_T$ relative to two specific strike prices, $K_1$ and $K_2$ (where $K_1 \le S_0 \le K_2$).
+* **Payoff Profile**: The premium is mathematically defined as:
+  * If the stock drops significantly ($S_T < K_1$): `Premium` = $\frac{N}{S_0}(K_1 - S_T)$
+  * If the stock stagnates ($K_1 \le S_T \le K_2$): `Premium` = 0
+  * If the stock rallies ($S_T > K_2$): `Premium` = $\frac{N}{S_0}(S_T - K_2)$
 
 ### 2. Airbag Note
-[cite_start]The Airbag Note provides no absolute principal protection but offers a structural buffer against moderate market downturns, combined with a tailored participation in market rallies[cite: 4, 22].
-* [cite_start]**Airbag Barrier**: The downside protection is active down to a specific "airbag" level, fixed at $A = 0.8 \cdot S_0$ (i.e., a 20% drop from the initial price)[cite: 30].
-* [cite_start]**Payoff Scenarios**: The final payoff is structured across three distinct market scenarios[cite: 23]:
-  * [cite_start]**Upside ($S_T \ge S_0$)**: The investor receives their initial investment back plus a partial participation rate ($p$) in the stock's positive performance: $N + p \cdot \frac{N}{S_0}(S_T - S_0)$[cite: 24, 25].
-  * [cite_start]**Protected Downside ($A \le S_T < S_0$)**: The product's airbag deploys, providing full downside protection so the investor receives their initial capital $N$ back entirely[cite: 26, 27].
-  * [cite_start]**Unprotected Downside ($S_T < A$)**: If the final stock price breaches the airbag level, the protection is knocked out, and the investor takes a proportional loss: $\frac{N}{A} \cdot S_T$[cite: 28, 29].
+The Airbag Note provides no absolute principal protection but offers a structural buffer against moderate market downturns, combined with a tailored participation in market rallies.
+* **Airbag Barrier**: The downside protection is active down to a specific "airbag" level, fixed at $A = 0.8 \cdot S_0$ (i.e., a 20% drop from the initial price).
+* **Payoff Scenarios**: The final payoff is structured across three distinct market scenarios:
+  * **Upside ($S_T \ge S_0$)**: The investor receives their initial investment back plus a partial participation rate ($p$) in the stock's positive performance: $N + p \cdot \frac{N}{S_0}(S_T - S_0)$
+  * **Protected Downside ($A \le S_T < S_0$)**: The product's airbag deploys, providing full downside protection so the investor receives their initial capital $N$ back entirely.
+  * **Unprotected Downside ($S_T < A$)**: If the final stock price breaches the airbag level, the protection is knocked out, and the investor takes a proportional loss: $\frac{N}{A} \cdot S_T$
 
 ## 📸 Screenshots
 <img width="2522" height="820" alt="image" src="https://github.com/user-attachments/assets/b2181ef6-823a-4563-8b55-3e583350d15a" />
