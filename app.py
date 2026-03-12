@@ -6,7 +6,7 @@ import dash_bootstrap_components as dbc
 import plotly.graph_objects as go
 from scipy.stats import norm
 import yfinance as yf
-from datetime import datetime
+from datetime import datetime, timedelta
 
 # =============================================================================
 # 0. NOUVELLE DIRECTION ARTISTIQUE : CYBER-QUANT (GLASSMORPHISM)
@@ -91,6 +91,48 @@ def bs_put(S, K, T, r, q, sigma):
     d2 = d1 - sigma * np.sqrt(T)
     return K * np.exp(-r * T) * norm.cdf(-d2) - S * np.exp(-q * T) * norm.cdf(-d1)
 
+# --- FONCTIONS DE RISQUE (GRECQUES ANALYTIQUES) ---
+def bs_d1(S, K, T, r, q, sigma):
+    T = np.maximum(T, 1e-5)
+    return (np.log(S / K) + (r - q + 0.5 * sigma ** 2) * T) / (sigma * np.sqrt(T))
+
+def bs_delta(S, K, T, r, q, sigma, option_type='call'):
+    d1 = bs_d1(S, K, T, r, q, sigma)
+    if option_type == 'call':
+        return np.exp(-q * T) * norm.cdf(d1)
+    else:
+        return np.exp(-q * T) * (norm.cdf(d1) - 1)
+
+def bs_gamma(S, K, T, r, q, sigma):
+    d1 = bs_d1(S, K, T, r, q, sigma)
+    return (np.exp(-q * T) * norm.pdf(d1)) / (S * sigma * np.sqrt(T))
+
+def bs_vega(S, K, T, r, q, sigma):
+    # Vega exprimé pour un changement de 1% de volatilité (divisé par 100)
+    d1 = bs_d1(S, K, T, r, q, sigma)
+    return (S * np.exp(-q * T) * norm.pdf(d1) * np.sqrt(T)) / 100.0
+
+def calc_portfolio_greeks(portfolio, S, T, r, q, sigma):
+    delta = portfolio['stocks']
+    gamma = 0.0
+    vega = 0.0
+    
+    for call in portfolio['calls']:
+        Q = call['Quantite']
+        K = call['Strike']
+        delta += Q * bs_delta(S, K, T, r, q, sigma, 'call')
+        gamma += Q * bs_gamma(S, K, T, r, q, sigma)
+        vega += Q * bs_vega(S, K, T, r, q, sigma)
+        
+    for put in portfolio['puts']:
+        Q = put['Quantite']
+        K = put['Strike']
+        delta += Q * bs_delta(S, K, T, r, q, sigma, 'put')
+        gamma += Q * bs_gamma(S, K, T, r, q, sigma)
+        vega += Q * bs_vega(S, K, T, r, q, sigma)
+        
+    return {'Delta': delta, 'Gamma': gamma, 'Vega': vega}
+
 def eval_portfolio_3D(portfolio, S_m, T_m, r_val, q_val, sigma_val):
     MtM = portfolio['cash'] * np.exp(-r_val * T_m) 
     MtM += portfolio['stocks'] * S_m * np.exp(-q_val * T_m)
@@ -110,9 +152,18 @@ def apply_theme(fig, title):
     return fig
 
 # UI Components 
-def kpi_card(title, value, color=T_COLORS['accent_cyan']):
+def kpi_card(title, value, color=T_COLORS['accent_cyan'], tooltip=""):
+    # Création du bloc titre avec l'icône d'information si un tooltip est fourni
+    title_content = [html.Span(title)]
+    if tooltip:
+        title_content.append(html.Span(
+            " ⓘ", 
+            title=tooltip, # C'est cet attribut HTML natif qui crée la bulle au survol
+            style={'cursor': 'help', 'color': 'rgba(255,255,255,0.5)', 'fontSize': '13px', 'marginLeft': '4px'}
+        ))
+        
     return html.Div([
-        html.Div(title, style={'fontSize': '11px', 'color': T_COLORS['text_main'], 'textTransform': 'uppercase', 'letterSpacing': '1px'}),
+        html.Div(title_content, style={'fontSize': '11px', 'color': T_COLORS['text_main'], 'textTransform': 'uppercase', 'letterSpacing': '1px'}),
         html.Div(value, style={'fontSize': '24px', 'color': color, 'fontWeight': 'bold', 'marginTop': '8px'})
     ], style={'padding': '20px', 'borderRight': f'1px solid {T_COLORS["grid_color"]}', 'flex': '1', 'textAlign': 'center'})
 
@@ -221,18 +272,24 @@ def update_dashboard(n_clicks, ticker_str, target_date_str, margin_val):
             return "", f"Aucune option disponible pour {ticker_str}."
         
         # --- GESTION INTELLIGENTE DE LA DATE ---
-        expiration_date = available_dates[min(4, len(available_dates)-1)] # Date par défaut si champ vide
+        # 1. On définit la cible par défaut : Aujourd'hui + 365 jours (T=1)
+        target_date_default = datetime.now() + timedelta(days=365)
         
+        # 2. On convertit les dates du marché en objets datetime
+        available_datetimes = [datetime.strptime(d, "%Y-%m-%d") for d in available_dates]
+        
+        # 3. Si l'utilisateur a tapé une date, on essaie de l'utiliser, sinon on garde T=1
         if target_date_str:
             try:
-                # On nettoie les espaces et on lit la date tapée
                 target_date = datetime.strptime(target_date_str.strip(), "%Y-%m-%d")
-                # On cherche la vraie date du marché la plus proche
-                available_datetimes = [datetime.strptime(d, "%Y-%m-%d") for d in available_dates]
-                closest_date_obj = min(available_datetimes, key=lambda d: abs(d - target_date))
-                expiration_date = closest_date_obj.strftime("%Y-%m-%d")
             except ValueError:
-                return "", "Format de date invalide. Veuillez utiliser YYYY-MM-DD (ex: 2025-12-19)."
+                target_date = target_date_default # Fallback de sécurité
+        else:
+            target_date = target_date_default
+
+        # 4. On trouve la date d'expiration RÉELLE la plus proche de notre cible
+        closest_date_obj = min(available_datetimes, key=lambda d: abs(d - target_date))
+        expiration_date = closest_date_obj.strftime("%Y-%m-%d")
 
         # Calcul de T (Maturité en années)
         date_format = "%Y-%m-%d"
@@ -344,10 +401,19 @@ def update_dashboard(n_clicks, ticker_str, target_date_str, margin_val):
         cout_total_airbag = zcb_cost_airbag - (quantite_put * put_bid_airbag) + (p_optimal * (N / S0) * call_ask_airbag)
 
         # =============================================================================
-        # 3. MOTEUR QUANTITATIF & SIMULATIONS
+        # 3. MOTEUR QUANTITATIF, SIMULATIONS & GESTION DES RISQUES
         # =============================================================================
         port_pppn = quant_reverse_engineer([(0, 900 + ratio_pppn * best_k1), (best_k1, 900), (best_k2, 900), (S0*2, 900 + ratio_pppn * (S0*2 - best_k2))])
         port_airbag = quant_reverse_engineer([(0, 0), (A, 1000), (S0, 1000), (S0*2, 1000 + p_optimal * (N/S0) * (S0*2 - S0))])
+
+        # --- CALCUL DES GRECQUES DU PORTEFEUILLE ---
+        greeks_pppn = calc_portfolio_greeks(port_pppn, S0, T, r, q, sigma)
+        greeks_airbag = calc_portfolio_greeks(port_airbag, S0, T, r, q, sigma)
+        
+        # Le Delta affiché au desk représente le nombre d'actions sous-jacentes 
+        # que la banque doit vendre (si Delta > 0) ou acheter (si Delta < 0) pour être neutre.
+        hedging_shares_pppn = -greeks_pppn['Delta']
+        hedging_shares_airbag = -greeks_airbag['Delta']
 
         N_sim, steps = 10000, 252 
         dt = T / steps
@@ -411,7 +477,7 @@ def update_dashboard(n_clicks, ticker_str, target_date_str, margin_val):
         fig_3d_pppn = create_3d(PnL_PPPN_3D, 'Tealgrn', "SURFACE DE RISQUES 3D (MtM)")
         fig_3d_airbag = create_3d(PnL_Airbag_3D, 'Plasma', "SURFACE DE RISQUES 3D (MtM)")
 
-        # =============================================================================
+# =============================================================================
         # MISE EN PAGE DU RÉSULTAT
         # =============================================================================
         table_data_pppn = [
@@ -443,6 +509,9 @@ def update_dashboard(n_clicks, ticker_str, target_date_str, margin_val):
 
             html.Div([dcc.Graph(figure=fig_paths)], style={**GLASS_STYLE, 'marginBottom': '40px', 'padding': '20px'}),
 
+            # =========================================================================
+            # BLOC 1 : PPPN
+            # =========================================================================
             html.Div(style={**GLASS_STYLE, 'marginBottom': '50px', 'padding': '30px'}, children=[
                 html.H2("PARTIALLY PRINCIPAL PROTECTED NOTE (PPPN)", style={'color': T_COLORS['accent_cyan'], 'marginTop': '0', 'letterSpacing': '2px', 'borderBottom': f'1px solid {T_COLORS["grid_color"]}', 'paddingBottom': '15px'}),
                 
@@ -460,9 +529,28 @@ def update_dashboard(n_clicks, ticker_str, target_date_str, margin_val):
                 html.Div([
                     html.Div([dcc.Graph(figure=fig_pnl_pppn)], style={'width': '40%', 'display': 'inline-block', 'verticalAlign': 'top'}),
                     html.Div([dcc.Graph(figure=fig_3d_pppn, style={'height': '500px'})], style={'width': '60%', 'display': 'inline-block'}),
-                ])
+                ], style={'marginBottom': '30px'}),
+
+                # Intégration du moniteur de risques DANS le bloc PPPN
+                html.H3("MONITEUR DE RISQUES (GRECQUES)", style={'color': T_COLORS['text_main'], 'fontSize': '14px', 'letterSpacing': '1px'}),
+                html.Div([
+                    kpi_card("Δ Delta (Pos. Globale)", f"{greeks_pppn['Delta']:.2f}", T_COLORS['text_kpi'], 
+                             tooltip="L'équivalent en actions de votre portefeuille. Un Delta positif signifie que vous gagnez si le marché monte."),
+                    
+                    kpi_card("Action Hedging (Titres)", f"{hedging_shares_pppn:.2f}", T_COLORS['accent_green'] if hedging_shares_pppn > 0 else T_COLORS['accent_red'], 
+                             tooltip="Action immédiate au desk : Quantité exacte d'actions sous-jacentes à acheter (vert) ou à vendre (rouge) pour immuniser le portefeuille contre les petits mouvements du marché."),
+                    
+                    kpi_card("Γ Gamma", f"{greeks_pppn['Gamma']:.4f}", T_COLORS['accent_cyan'], 
+                             tooltip="Mesure la vitesse à laquelle votre Delta change. Un Gamma élevé signifie que votre position est instable et nécessitera de réajuster votre couverture (Hedging) très fréquemment."),
+                    
+                    kpi_card("V Vega (pour 1% IV)", f"{greeks_pppn['Vega']:.2f} $", T_COLORS['accent_cyan'], 
+                             tooltip="L'impact direct en dollars sur votre P&L si la volatilité implicite (IV) du marché augmente soudainement de 1 point (ex: passage de 20% à 21%).")
+                ], style={'display': 'flex', 'backgroundColor': 'rgba(13, 22, 40, 0.8)', 'border': f'1px solid {T_COLORS["grid_color"]}', 'borderRadius': '8px'})
             ]),
 
+            # =========================================================================
+            # BLOC 2 : AIRBAG
+            # =========================================================================
             html.Div(style={**GLASS_STYLE, 'marginBottom': '50px', 'padding': '30px'}, children=[
                 html.H2("AIRBAG NOTE (PARTICIPATION OPTIMISÉE)", style={'color': T_COLORS['accent_gold'], 'marginTop': '0', 'letterSpacing': '2px', 'borderBottom': f'1px solid {T_COLORS["grid_color"]}', 'paddingBottom': '15px'}),
                 
@@ -480,7 +568,23 @@ def update_dashboard(n_clicks, ticker_str, target_date_str, margin_val):
                 html.Div([
                     html.Div([dcc.Graph(figure=fig_pnl_airbag)], style={'width': '40%', 'display': 'inline-block', 'verticalAlign': 'top'}),
                     html.Div([dcc.Graph(figure=fig_3d_airbag, style={'height': '500px'})], style={'width': '60%', 'display': 'inline-block'}),
-                ])
+                ], style={'marginBottom': '30px'}),
+
+                # Intégration du moniteur de risques DANS le bloc Airbag
+                html.H3("MONITEUR DE RISQUES (GRECQUES)", style={'color': T_COLORS['text_main'], 'fontSize': '14px', 'letterSpacing': '1px'}),
+                html.Div([
+                    kpi_card("Δ Delta (Pos. Globale)", f"{greeks_airbag['Delta']:.2f}", T_COLORS['text_kpi'], 
+                             tooltip="L'équivalent en actions de votre portefeuille. Un Delta positif signifie que vous gagnez si le marché monte."),
+                    
+                    kpi_card("Action Hedging (Titres)", f"{hedging_shares_airbag:.2f}", T_COLORS['accent_green'] if hedging_shares_airbag > 0 else T_COLORS['accent_red'], 
+                             tooltip="Action immédiate au desk : Quantité exacte d'actions sous-jacentes à acheter (vert) ou à vendre (rouge) pour immuniser le portefeuille contre les petits mouvements du marché."),
+                    
+                    kpi_card("Γ Gamma", f"{greeks_airbag['Gamma']:.4f}", T_COLORS['accent_gold'], 
+                             tooltip="Mesure la vitesse à laquelle votre Delta change. Un Gamma élevé signifie que votre position est instable et nécessitera de réajuster votre couverture (Hedging) très fréquemment."),
+                    
+                    kpi_card("V Vega (pour 1% IV)", f"{greeks_airbag['Vega']:.2f} $", T_COLORS['accent_gold'], 
+                             tooltip="L'impact direct en dollars sur votre P&L si la volatilité implicite (IV) du marché augmente soudainement de 1 point (ex: passage de 20% à 21%).")
+                ], style={'display': 'flex', 'backgroundColor': 'rgba(13, 22, 40, 0.8)', 'border': f'1px solid {T_COLORS["grid_color"]}', 'borderRadius': '8px'})
             ])
         ])
 
