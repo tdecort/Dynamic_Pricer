@@ -7,7 +7,7 @@ A real-time quantitative finance web application built with Dash and Plotly. Thi
 ## ✨ Key Features
 
 * **Live Market Data Integration:** Fetches real-time stock prices, dividend yields, risk-free rates, and option chains (bid/ask/IV) via the Yahoo Finance API (`yfinance`).
-* **Advanced Quantitative Engine:** * Calculates theoretical option prices using the **Black-Scholes** model.
+* **Advanced Quantitative Engine:** Calculates theoretical option prices using the **Black-Scholes** model.
   * Simulates underlying asset trajectories using **Monte Carlo** simulations.
   * Solves for optimal commercial parameters based on a target banking margin.
 * **Structured Products Supported:**
