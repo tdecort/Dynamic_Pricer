@@ -8,13 +8,13 @@ A real-time quantitative finance web application built with Dash and Plotly. Thi
 
 * **Live Market Data Integration:** Fetches real-time stock prices, dividend yields, risk-free rates, and option chains (bid/ask/IV) via the Yahoo Finance API (`yfinance`).
 * **Advanced Quantitative Engine:** * Calculates theoretical option prices using the **Black-Scholes** model.
-    * Simulates underlying asset trajectories using **Monte Carlo** simulations.
-    * Solves for optimal commercial parameters based on a target banking margin.
+  * Simulates underlying asset trajectories using **Monte Carlo** simulations.
+  * Solves for optimal commercial parameters based on a target banking margin.
 * **Structured Products Supported:**
     * **PPPN (Partially Principal Protected Note):** Capital guarantee with upside participation.
     * **Airbag Note:** Optimized participation with downside protection up to a specific barrier.
 * **Interactive 3D Risk Surfaces:** Visualizes Mark-to-Market (MtM) valuations across varying spot prices and time to maturity.
-* **"Cyber-Quant" UI:** A modern, dark-themed Glassmorphism interface built with Dash.
+* **UI:** A dark-themed Glassmorphism interface built with Dash.
 
 ## 📈 Structured Products Supported
 
@@ -47,7 +47,9 @@ The Airbag Note provides no absolute principal protection but offers a structura
 
 ## 🚀 Installation & Setup
 
-1. **Install the latest version of Python and the packages**
+1. **Install the latest version of Python and the required packages:**
+   ```
    python -m pip install dash dash-bootstrap-components plotly pandas numpy scipy yfinance
-2. **run using :"python app.py"**
-  
+2. **run using this command in your Terminal:**
+  ```
+   python app.py
