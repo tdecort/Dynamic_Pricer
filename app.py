@@ -415,7 +415,7 @@ def update_dashboard(n_clicks, ticker_str, target_date_str, margin_val):
         hedging_shares_pppn = -greeks_pppn['Delta']
         hedging_shares_airbag = -greeks_airbag['Delta']
 
-        N_sim, steps = 10000, 252 
+        N_sim, steps = 100000, 252 
         dt = T / steps
         np.random.seed(42)
         Z = np.random.standard_normal((steps, N_sim))
@@ -1191,4 +1191,5 @@ def update_dashboard(n_clicks, ticker_str, target_date_str, margin_val):
 
 if __name__ == '__main__':
     app.run(debug=True)
+
 
