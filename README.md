@@ -51,5 +51,5 @@ The Airbag Note provides no absolute principal protection but offers a structura
    ```
    python -m pip install dash dash-bootstrap-components plotly pandas numpy scipy yfinance
 2. **run using this command in your Terminal:**
-  ```
+   ```
    python app.py
